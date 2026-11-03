@@ -1,0 +1,222 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/config.php';
+washly_send_security_headers();
+washly_start_session();
+
+if (!washly_installed()) {
+    header('Location: setup.php');
+    exit;
+}
+$admin = washly_require_user();
+?>
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f7fb" />
+    <title>Washly — Sistem Manajemen Laundry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#dashboard" aria-label="Washly beranda">
+          <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C12.5 8.2 7 13.8 7 20a9 9 0 0 0 18 0c0-6.2-5.5-11.8-9-17Z" fill="currentColor"/><path d="M12 21c.5 2.1 2 3 4 3" fill="none" stroke="white" stroke-linecap="round" stroke-width="2"/></svg></span>
+          <span class="brand-name">washly<span class="brand-dot">.</span><small>LAUNDRY MANAGEMENT</small></span>
+        </a>
+
+        <div class="branch-picker">
+          <span class="branch-icon">✳</span>
+          <span><strong>Washly Express</strong><small>Cabang Sudirman</small></span>
+          <span class="branch-chevron">⌄</span>
+        </div>
+
+        <nav class="main-nav" aria-label="Navigasi utama">
+          <p class="nav-label">MENU UTAMA</p>
+          <a class="nav-link active" href="#dashboard" data-page="dashboard"><span class="nav-icon">◫</span>Dashboard</a>
+          <a class="nav-link" href="#pesanan" data-page="pesanan"><span class="nav-icon">▤</span>Data Pesanan<span class="nav-count" id="orderCount">0</span></a>
+          <a class="nav-link" href="#riwayat" data-page="riwayat"><span class="nav-icon">◷</span>Riwayat Cucian</a>
+          <a class="nav-link" href="#pelanggan" data-page="pelanggan"><span class="nav-icon">♧</span>Data Pelanggan</a>
+          <a class="nav-link" href="#layanan" data-page="layanan"><span class="nav-icon">◈</span>Layanan</a>
+          <a class="nav-link" href="#stok" data-page="stok"><span class="nav-icon">▦</span>Stok & Inventori</a>
+          <p class="nav-label nav-label-spaced">ANALISIS</p>
+          <a class="nav-link" href="#laporan" data-page="laporan"><span class="nav-icon">▥</span>Laporan</a>
+          <a class="nav-link" href="#pengaturan" data-page="pengaturan"><span class="nav-icon">⚙</span>Pengaturan</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <div class="help-card">
+            <div class="help-spark">✦</div>
+            <strong>Butuh bantuan?</strong>
+            <p>Tim kami siap membantu operasional laundry Anda.</p>
+            <a href="mailto:bantuan@washly.id">Hubungi support <span>↗</span></a>
+          </div>
+          <button class="profile-button" id="profileButton">
+            <span class="avatar avatar-purple" data-admin-initials>AN</span>
+            <span class="profile-copy"><strong data-admin-name><?= htmlspecialchars($admin['name'], ENT_QUOTES, 'UTF-8') ?></strong><small>Administrator</small></span>
+            <span class="profile-more">···</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <button class="menu-toggle icon-button" id="menuToggle" aria-label="Buka menu">☰</button>
+          <div class="breadcrumb"><span>Halaman</span><span class="crumb-separator">/</span><strong id="pageBreadcrumb">Dashboard</strong></div>
+          <div class="topbar-actions">
+            <div class="date-display"><span>◷</span><span id="currentDate"></span></div>
+            <button class="button button-outline share-button" id="shareButton"><span>↗</span> Bagikan ke WhatsApp</button>
+            <button class="icon-button notification-button" id="notificationButton" aria-label="Notifikasi"><span>♧</span><i></i></button>
+            <span class="topbar-divider"></span>
+            <button class="topbar-user" id="topbarUser"><span class="avatar avatar-purple" data-admin-initials>AN</span><span><strong data-admin-short-name>Aditya</strong><small>Admin</small></span><span class="chevron">⌄</span></button>
+          </div>
+        </header>
+
+        <div class="page-container">
+          <section class="page-heading">
+            <div>
+              <p class="eyebrow" id="greeting">SELAMAT PAGI, ADITYA ✨</p>
+              <h1 id="pageTitle">Dashboard</h1>
+              <p class="page-subtitle" id="pageSubtitle">Pantau performa laundry Anda hari ini.</p>
+            </div>
+            <button class="button button-primary" id="newOrderButton"><span class="button-plus">＋</span> Buat Pesanan</button>
+            <button class="button button-outline hidden" id="manageServicesButton">＋ Tambah layanan</button>
+          </section>
+
+          <section class="stats-grid" aria-label="Ringkasan hari ini">
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">Pendapatan Bulan Ini</span><span class="stat-icon icon-mint">↗</span></div>
+              <strong class="stat-value" id="revenueValue">Rp 0</strong>
+              <div class="stat-footer"><span id="revenueOrderCount">0 pemasukan</span></div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">Pesanan Aktif</span><span class="stat-icon icon-blue">▤</span></div>
+              <strong class="stat-value" id="activeOrdersValue">0 <small>pesanan</small></strong>
+              <div class="stat-footer"><span>Pesanan belum selesai</span></div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">Pelanggan Baru</span><span class="stat-icon icon-orange">♧</span></div>
+              <strong class="stat-value" id="newCustomersValue">0 <small>pelanggan</small></strong>
+              <div class="stat-footer"><span>Pelanggan tercatat</span></div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">Cucian Selesai</span><span class="stat-icon icon-lilac">✓</span></div>
+              <strong class="stat-value" id="completedOrdersValue">0 <small>pesanan</small></strong>
+              <div class="stat-footer"><span>Semua riwayat</span></div>
+            </article>
+          </section>
+
+          <section class="content-grid">
+            <article class="panel revenue-panel">
+              <div class="panel-header">
+                <div><h2>Riwayat Pemasukan</h2><p>Pendapatan cucian yang diterima dalam 7 hari terakhir</p></div>
+                <span class="chart-range-label">7 hari terakhir</span>
+              </div>
+              <div class="chart-legend"><span><i class="legend-dot legend-current"></i>Pendapatan</span><span><i class="legend-dot legend-previous"></i>Minggu lalu</span></div>
+              <div class="chart-wrap">
+                <div class="chart-y-labels"><span id="chartAxisTop">Rp 0</span><span id="chartAxisMiddleTop">Rp 0</span><span id="chartAxisMiddleBottom">Rp 0</span><span>Rp 0</span></div>
+                <svg class="revenue-chart" viewBox="0 0 700 220" preserveAspectRatio="none" role="img" aria-label="Grafik pendapatan selama tujuh hari">
+                  <defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#7772eb" stop-opacity=".18"/><stop offset="100%" stop-color="#7772eb" stop-opacity="0"/></linearGradient></defs>
+                  <path class="chart-gridline" d="M0 20H700M0 78H700M0 136H700M0 194H700"/>
+                  <path id="chartArea" d="" fill="url(#chartFill)"/>
+                  <path class="chart-line" id="chartLine" d=""/>
+                  <g id="chartPoints"></g>
+                </svg>
+                <div class="chart-x-labels" id="chartLabels"></div>
+              </div>
+            </article>
+
+            <article class="panel order-status-panel">
+              <div class="panel-header">
+                <div><h2>Status Pesanan</h2><p>Jumlah tiap status cucian</p></div>
+              </div>
+              <div class="donut-area">
+                <div class="donut-chart"><div class="donut-center"><strong id="donutTotal">24</strong><span>Total order</span></div></div>
+                <div class="donut-legend">
+                  <div><i class="legend-dot dot-received"></i><span>Diterima</span><strong id="statusReceived">0</strong></div>
+                  <div><i class="legend-dot dot-washing"></i><span>Dicuci</span><strong id="statusWashing">0</strong></div>
+                  <div><i class="legend-dot dot-drying"></i><span>Dikeringkan</span><strong id="statusDrying">0</strong></div>
+                  <div><i class="legend-dot dot-ready"></i><span>Siap diambil</span><strong id="statusReady">0</strong></div>
+                  <div><i class="legend-dot dot-done"></i><span>Selesai</span><strong id="statusDone">0</strong></div>
+                  <div><i class="legend-dot dot-cancelled"></i><span>Dibatalkan</span><strong id="statusCancelled">0</strong></div>
+                </div>
+              </div>
+              <button class="text-link" data-go="pesanan">Lihat semua pesanan <span>→</span></button>
+            </article>
+          </section>
+
+          <section class="panel orders-panel">
+            <div class="panel-header orders-header">
+              <div><h2>Pesanan Terbaru</h2><p>Daftar transaksi laundry terbaru Anda</p></div>
+              <div class="table-actions">
+                <label class="search-box"><span>⌕</span><input type="search" id="orderSearch" placeholder="Cari pesanan..." aria-label="Cari pesanan" /></label>
+                <select class="select-button filter-button" id="statusFilter" aria-label="Filter status pesanan"><option>Semua status</option><option>Diterima</option><option>Dicuci</option><option>Dikeringkan</option><option>Siap diambil</option><option>Selesai</option><option>Dibatalkan</option></select>
+                <div class="history-filters hidden" id="historyFilters"><label>Dari <input type="date" id="dateFrom" aria-label="Tanggal awal riwayat" /></label><label>Sampai <input type="date" id="dateTo" aria-label="Tanggal akhir riwayat" /></label><button class="button button-outline" id="exportHistoryButton">Ekspor CSV</button></div>
+                <button class="button button-outline" id="viewAllButton">Lihat semua <span>→</span></button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead id="ordersTableHead"><tr><th>ID PESANAN</th><th>PELANGGAN</th><th>LAYANAN</th><th>TANGGAL MASUK</th><th>TOTAL</th><th>STATUS</th><th></th></tr></thead>
+                <tbody id="ordersTableBody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="emptyState">Pesanan tidak ditemukan. Coba kata kunci atau filter lain.</div>
+            </div>
+            <div class="table-footer"><span id="tableSummary">Belum ada cucian</span><span class="table-note">Perubahan tersimpan di browser perangkat ini</span></div>
+          </section>
+          <footer class="page-footer">© <span id="copyrightYear"></span> Washly. Kelola laundry jadi lebih mudah.</footer>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="modal-backdrop hidden" id="orderModal" role="presentation">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-header"><div><p class="eyebrow">TRANSAKSI BARU</p><h2 id="modalTitle">Buat Pesanan</h2></div><button class="icon-button close-modal" id="closeModal" aria-label="Tutup">×</button></div>
+        <form id="orderForm">
+          <label class="form-field">Nama pelanggan<input name="customer" required maxlength="80" placeholder="Contoh: Rina Putri" /></label>
+          <div class="form-row"><label class="form-field">Nomor telepon<input name="phone" required type="tel" maxlength="24" placeholder="08xxxxxxxxxx" /></label><label class="form-field">Berat cucian (kg)<input name="weight" required type="number" min="0.1" step="0.1" placeholder="3" /></label></div>
+          <div class="form-row"><label class="form-field">Layanan<select name="service" required></select></label><label class="form-field">Tanggal masuk<input name="receivedAt" required type="datetime-local" /></label></div>
+          <div class="form-row"><label class="form-field">Harga layanan (Rp/kg)<input name="pricePerKg" required type="number" min="1" step="500" /></label><label class="form-field">Status cucian<select name="status"><option>Diterima</option><option>Dicuci</option><option>Dikeringkan</option><option>Siap diambil</option><option>Selesai</option><option>Dibatalkan</option></select></label></div>
+          <div class="modal-note"><span>ⓘ</span> Total harga dihitung otomatis dari berat × harga per kg. <strong id="orderTotalPreview">Total cucian: Rp 0</strong></div>
+          <input type="hidden" name="id" />
+          <div class="modal-actions"><button type="button" class="button button-outline" id="cancelModal">Batal</button><button class="button button-primary" type="submit" id="orderSubmitButton">Simpan Pesanan <span>→</span></button></div>
+        </form>
+      </section>
+    </div>
+    <div class="modal-backdrop hidden" id="accountModal" role="presentation">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+        <div class="modal-header"><div><p class="eyebrow">AKUN TERLINDUNGI</p><h2 id="accountModalTitle">Profil Administrator</h2></div><button class="icon-button" id="closeAccountModal" aria-label="Tutup">×</button></div>
+        <form id="accountForm">
+          <label class="form-field">Username<input name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]{3,32}" autocomplete="username" /></label>
+          <label class="form-field">Nama administrator<input name="name" required maxlength="60" /></label>
+          <label class="form-field">Nomor kontak<input name="phone" type="tel" maxlength="24" placeholder="08xxxxxxxxxx" /></label>
+          <label class="form-field">Kata sandi saat ini<input name="currentPassword" required type="password" maxlength="72" autocomplete="current-password" /></label>
+          <label class="form-field">Kata sandi baru <small>(kosongkan jika tidak ingin mengubah)</small><input name="newPassword" type="password" minlength="12" maxlength="72" autocomplete="new-password" /></label>
+          <div class="modal-note"><span>ⓘ</span> Perubahan profil dan kata sandi tersimpan di database server.</div>
+          <div class="modal-actions"><button type="button" class="button button-outline" id="cancelAccountModal">Batal</button><button class="button button-primary" type="submit">Simpan profil</button></div>
+        </form>
+        <form method="post" action="logout.php" class="logout-form"><input type="hidden" id="logoutCsrf" name="csrf_token" value="<?= htmlspecialchars(washly_csrf_token(), ENT_QUOTES, 'UTF-8') ?>" /><button class="button button-outline" type="submit">Keluar dari akun</button></form>
+      </section>
+    </div>
+    <div class="modal-backdrop hidden" id="serviceModal" role="presentation">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="serviceModalTitle">
+        <div class="modal-header"><div><p class="eyebrow">DAFTAR HARGA</p><h2 id="serviceModalTitle">Tambah layanan</h2></div><button class="icon-button" id="closeServiceModal" aria-label="Tutup">×</button></div>
+        <form id="serviceForm">
+          <input type="hidden" name="originalName" />
+          <label class="form-field">Nama layanan<input name="name" required maxlength="60" placeholder="Contoh: Cuci Sepatu" /></label>
+          <div class="form-row"><label class="form-field">Harga per kg (Rp)<input name="price" required type="number" min="1" step="500" /></label><label class="form-field">Estimasi selesai<input name="turnaround" required maxlength="40" placeholder="Contoh: 2 hari" /></label></div>
+          <div class="modal-actions"><button type="button" class="button button-outline" id="cancelServiceModal">Batal</button><button class="button button-primary" type="submit">Simpan layanan</button></div>
+        </form>
+      </section>
+    </div>
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    <script src="app.js" defer></script>
+  </body>
+</html>

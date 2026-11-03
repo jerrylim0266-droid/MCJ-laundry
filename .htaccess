@@ -1,0 +1,6 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<FilesMatch "(?i)^(config\.local\.php|config\.local\.tmp\.php|schema\.sql|README\.md|\.gitignore)$">
+    Require all denied
+</FilesMatch>
